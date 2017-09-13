@@ -6,7 +6,7 @@ import (
 
 type ConnMap struct {
 	sync.Mutex
-	v map[string]chan interface{}
+	v map[string]Conn
 }
 
 func (s *ConnMap) Len() int {
@@ -15,18 +15,18 @@ func (s *ConnMap) Len() int {
 	return len(s.v)
 }
 
-func (s *ConnMap) Add(key string,v chan interface{}) int  {
+func (s *ConnMap) Add(key string,c Conn) int  {
 	s.Lock()
 	defer  s.Unlock()
 	if _,found := s.v[key];!found  {
-		s.v[key] = v
+		s.v[key] = c
 	}else{
 		return 0
 	}
 	return 1
 }
 
-func (s *ConnMap) Get(key string) chan interface{}  {
+func (s *ConnMap) Get(key string)  Conn  {
 	s.Lock()
 	defer  s.Unlock()
 	if _,found := s.v[key];!found  {
@@ -65,6 +65,6 @@ func (s *ConnMap) Exists(key string) bool {
 
 func NewConnMap() *ConnMap {
 	return &ConnMap{
-		v: make(map[string]chan interface{}),
+		v: make(map[string]Conn),
 	}
 }

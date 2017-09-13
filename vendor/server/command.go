@@ -3,6 +3,8 @@ package server
 import (
 	"strings"
 	"strconv"
+	"fmt"
+	"time"
 )
 
 type fn func(s *Server,conn Conn, cmd Command) error
@@ -39,7 +41,8 @@ func set(s *Server,conn Conn, cmd Command) error {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 		return nil
 	}
-	s.db.Set(string(cmd.Args[1]),cmd.Args[2])
+	//s.db.Set(string(cmd.Args[1]),cmd.Args[2])
+	_Storage.Propose(&kv{Method:"set",Args:cmd.Args[1:]})
 	conn.WriteString("OK")
 	return nil
 }
@@ -63,12 +66,11 @@ func del(s *Server,conn Conn, cmd Command) error {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 		return nil
 	}
-	num ,err := s.db.Del(cmd.Args...)
-	if err != nil {
-		conn.WriteError(err.Error())
-		return nil
-	}
-	conn.WriteInt(num)
+	k := fmt.Sprintf("%d%d",ID,time.Now().UnixNano())
+	Conns.Add(k,conn)
+	//defer  Conns.Del(k)
+	_Storage.Propose(&kv{Method:"del",Args:cmd.Args[1:],Conn:k})
+
 	return nil
 }
 

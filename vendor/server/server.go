@@ -107,7 +107,7 @@ func NewServerNetwork(
 		closed:  closed,
 		conns:   make(map[*conn]bool),
 	}
-	s.db = NewMemdb()
+	s.db = _Storage.Redis
 	//InitNewWal(s)
 	return s
 }
@@ -245,7 +245,6 @@ func handle(s *Server, c *conn) {
 				} else {
 					c.cmds = c.cmds[1:]
 				}
-				//s.handler(s,c, cmd)
 				DoCmd(s,c,cmd)
 			}
 			if c.detached {

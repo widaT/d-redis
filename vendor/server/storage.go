@@ -1,14 +1,13 @@
 package server
 
 import (
-	"github.com/vmihailenco/msgpack"
 	"log"
 	"github.com/coreos/etcd/snap"
-	"sync"
+	"github.com/vmihailenco/msgpack"
 )
 
 var _Storage * Storage
-var _DBRwmu sync.RWMutex
+
 
 // a key-value store backed by raftd
 type Storage struct {
@@ -33,19 +32,18 @@ func Run() {
 
 
 
-func (s *Storage) Propose(opt *Opt) {
-	b ,err := msgpack.Marshal(opt)
-	//println(buf.String())
+func (s *Storage) Propose(kv *kv) {
+	b ,err := msgpack.Marshal(kv)
 	if err != nil {
 		log.Fatalf("msgpack Marshal err (%v)", err)
 	}
+	println(string(b))
 	s.proposeC <- string(b)
 }
 
 func (s *Storage) readCommits(commitC <-chan *string, errorC <-chan error) {
 	for data := range commitC {
 		if data == nil {
-			//println(" readCommits recive nil")
 			snapshot, err := s.snapshotter.Load()
 			if err == snap.ErrNoSnapshot {
 				return
@@ -69,73 +67,67 @@ func (s *Storage) readCommits(commitC <-chan *string, errorC <-chan error) {
 			log.Fatalf("msgpack.Unmarshal err (%v)", err)
 		}
 		//log.Printf("do commit %s %s %s",dataKv.Method,dataKv.Args,dataKv.Conn)
-		_DBRwmu.Lock()
 
-		/*switch dataKv.Method {
+		switch dataKv.Method {
 		case "set" :
-			s.Redis.methodSet(dataKv.Args)
+			s.Redis.Set(string(dataKv.Args[0]),dataKv.Args[1])
 		case "del" :
-			num := s.Redis.methodDel(dataKv.Args)
-			if Conns.Exists(dataKv.Conn){
-				respchan := Conns.Get(dataKv.Conn)
-				respchan <- num
-			}
-		case "hset":
-			num := s.Redis.methodHset(dataKv.Args)
-			if Conns.Exists(dataKv.Conn){
-				respchan := Conns.Get(dataKv.Conn)
-				respchan <- num
-			}
-
-		case "rpush":
-			num := s.Redis.methodRpush(dataKv.Args)
-			if Conns.Exists(dataKv.Conn){
-				respchan := Conns.Get(dataKv.Conn)
-				respchan <- num
-			}
-		case "lpush":
-			num := s.Redis.methodLpush(dataKv.Args)
-			if Conns.Exists(dataKv.Conn){
-				respchan := Conns.Get(dataKv.Conn)
-				respchan <- num
-			}
-		case "lpop":
-			byteArr := s.Redis.methodLpop(dataKv.Args)
-			if Conns.Exists(dataKv.Conn){
-				respchan := Conns.Get(dataKv.Conn)
-				respchan <- byteArr
-			}
-		case "rpop":
-			byteArr := s.Redis.methodRpop(dataKv.Args)
-			if Conns.Exists(dataKv.Conn){
-				respchan := Conns.Get(dataKv.Conn)
-				respchan <- byteArr
-			}
-		case "sadd":
-			num := s.Redis.methodSadd(dataKv.Args)
-			if Conns.Exists(dataKv.Conn){
-				respchan := Conns.Get(dataKv.Conn)
-				respchan <- num
-			}
-
-		case "mset":
-			s.Redis.methodMset(dataKv.Args)
-		case "spop":
-			s.Redis.methodSpop(dataKv.Args)
-		case "incr":
-			num,err := s.Redis.methodIncr(dataKv.Args)
-			if Conns.Exists(dataKv.Conn){
-				respchan := Conns.Get(dataKv.Conn)
-				if err != nil {
-					respchan <- err
-				}else {
+			 s.Redis.Del(dataKv.Conn,dataKv.Args...)
+			/*case "hset":
+				num := s.Redis.methodHset(dataKv.Args)
+				if Conns.Exists(dataKv.Conn){
+					respchan := Conns.Get(dataKv.Conn)
 					respchan <- num
 				}
-			}
+
+			case "rpush":
+				num := s.Redis.methodRpush(dataKv.Args)
+				if Conns.Exists(dataKv.Conn){
+					respchan := Conns.Get(dataKv.Conn)
+					respchan <- num
+				}
+			case "lpush":
+				num := s.Redis.methodLpush(dataKv.Args)
+				if Conns.Exists(dataKv.Conn){
+					respchan := Conns.Get(dataKv.Conn)
+					respchan <- num
+				}
+			case "lpop":
+				byteArr := s.Redis.methodLpop(dataKv.Args)
+				if Conns.Exists(dataKv.Conn){
+					respchan := Conns.Get(dataKv.Conn)
+					respchan <- byteArr
+				}
+			case "rpop":
+				byteArr := s.Redis.methodRpop(dataKv.Args)
+				if Conns.Exists(dataKv.Conn){
+					respchan := Conns.Get(dataKv.Conn)
+					respchan <- byteArr
+				}
+			case "sadd":
+				num := s.Redis.methodSadd(dataKv.Args)
+				if Conns.Exists(dataKv.Conn){
+					respchan := Conns.Get(dataKv.Conn)
+					respchan <- num
+				}
+
+			case "mset":
+				s.Redis.methodMset(dataKv.Args)
+			case "spop":
+				s.Redis.methodSpop(dataKv.Args)
+			case "incr":
+				num,err := s.Redis.methodIncr(dataKv.Args)
+				if Conns.Exists(dataKv.Conn){
+					respchan := Conns.Get(dataKv.Conn)
+					if err != nil {
+						respchan <- err
+					}else {
+						respchan <- num
+					}
+				}*/
 		default:
 			//do nothing*//*
-		}*/
-		_DBRwmu.Unlock()
+		}
 	}
 	if err, ok := <-errorC; ok {
 		log.Fatal(err)

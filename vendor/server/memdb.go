@@ -335,7 +335,7 @@ func (m *Memdb) Incr (key string) (int, error) {
 	return num ,nil
 }
 
-func (m *Memdb) Del(keys ...[]byte) (int, error) {
+func (m *Memdb) Del(uk string,keys ...[]byte) {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
 	count := 0
@@ -367,7 +367,11 @@ func (m *Memdb) Del(keys ...[]byte) (int, error) {
 			count++
 		}
 	}
-	return count, nil
+	if conn := Conns.Get(uk) ;conn != nil{
+		conn.WriteInt(count)
+		Conns.Del(uk)
+	}
+
 }
 
 //sort set
