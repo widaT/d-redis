@@ -168,10 +168,6 @@ func (m *Memdb) Lpush(values ...[]byte) (int, error) {
 
 
 func (m *Memdb)Lpop(key string) ([]byte,error) {
-
-	if m.dlList == nil{
-		return nil, nil
-	}
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
 	if _,found := m.dlList[key];!found{
@@ -181,9 +177,6 @@ func (m *Memdb)Lpop(key string) ([]byte,error) {
 }
 
 func (m *Memdb)Rpop(key string) ([]byte,error) {
-	if m.dlList == nil{
-		return nil, nil
-	}
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
 	if _,found := m.dlList[key];!found{
@@ -248,11 +241,8 @@ func (m *Memdb) Smembers (key string)  ([][]byte,error) {
 	if _, exists := m.HSet[key]; !exists {
 		return nil,nil
 	}
-
 	return *m.HSet[key].Members(),nil
 }
-
-
 
 //hash set
 func (m *Memdb) Hget(key, subkey string) ([]byte, error) {
