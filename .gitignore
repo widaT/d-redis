@@ -1,0 +1,18 @@
+/coverage
+/gopath
+/gopath.proto
+/go-bindata
+/machine*
+/bin
+.vagrant
+*.etcd
+/etcd
+*.swp
+/hack/insta-discovery/.env
+*.test
+tools/functional-tester/docker/bin
+hack/tls-setup/certs
+.idea
+data
+raft-redis
+log.log 8183.31 requests per second
