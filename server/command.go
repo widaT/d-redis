@@ -4,6 +4,7 @@ import (
 	"strings"
 	"strconv"
 	"fmt"
+	"sync"
 )
 
 type T struct {
@@ -68,6 +69,7 @@ func mset(s *Server,conn Conn, cmd Command) error {
 func del(s *Server,conn Conn, cmd Command) error {
 	if len(cmd.Args) < 2 {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
+		conn.Context().(*sync.WaitGroup).Done()
 		return nil
 	}
 	k := fmt.Sprintf("%s",conn.RemoteAddr())
