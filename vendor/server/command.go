@@ -6,22 +6,27 @@ import (
 	"fmt"
 )
 
-type fn func(s *Server,conn Conn, cmd Command) error
-
-var commandMap = make(map[string]fn)
-
-func registerCmd(cmd string,f fn)  {
-	commandMap[cmd] = f
+type T struct {
+	fn fn
+	w bool
 }
 
-func DoCmd(s *Server ,conn Conn, cmd Command) error {
+type fn func(s *Server,conn Conn, cmd Command) error
+
+var commandMap = make(map[string]T)
+
+func registerCmd(cmd string,f fn,needwait bool)  {
+	commandMap[cmd] = T{f,needwait}
+}
+
+func DoCmd(s *Server ,conn Conn, cmd Command) (error,bool) {
 	c := strings.ToLower(string(cmd.Args[0]))
 	f,found := commandMap[c]
 	if !found{
 		conn.WriteError("ERR unknown command '" + string(cmd.Args[0]) + "'")
-		return nil
+		return nil,false
 	}
-	return f(s ,conn,cmd)
+	return f.fn(s ,conn,cmd),f.w
 }
 
 func ping(s *Server,conn Conn, cmd Command) error  {
@@ -327,24 +332,24 @@ func zrange(s *Server,conn Conn, cmd Command)  error {
 }
 
 func init()  {
-	registerCmd("ping",ping)
-	registerCmd("select",sselect)
-	registerCmd("set",set)
-	registerCmd("get",get)
-	registerCmd("del",del)
-	registerCmd("incr",incr)
-	registerCmd("lpush",lpush)
-	registerCmd("rpush",rpush)
-	registerCmd("lpop",lpop)
-	registerCmd("rpop",rpop)
-	registerCmd("lrange",lrange)
-	registerCmd("sadd",sadd)
-	registerCmd("spop",spop)
-	registerCmd("smembers",smembers)
-	registerCmd("mset",mset)
-	registerCmd("zrange",zrange)
-	registerCmd("zadd",zadd)
-	registerCmd("hset",hset)
-	registerCmd("hget",hget)
-	registerCmd("hgetall",hgetall)
+	registerCmd("ping",ping,false)
+	registerCmd("select",sselect,false)
+	registerCmd("set",set,false)
+	registerCmd("get",get,false)
+	registerCmd("del",del,true)
+	registerCmd("incr",incr,true)
+	registerCmd("lpush",lpush,true)
+	registerCmd("rpush",rpush,true)
+	registerCmd("lpop",lpop,true)
+	registerCmd("rpop",rpop,true)
+	registerCmd("lrange",lrange,false)
+	registerCmd("sadd",sadd,true)
+	registerCmd("spop",spop,true)
+	registerCmd("smembers",smembers,false)
+	registerCmd("mset",mset,false)
+	registerCmd("zrange",zrange,false)
+	registerCmd("zadd",zadd,true)
+	registerCmd("hset",hset,true)
+	registerCmd("hget",hget,false)
+	registerCmd("hgetall",hgetall,false)
 }

@@ -226,6 +226,9 @@ func handle(s *Server, c *conn) {
 	err = func() error {
 		// read commands and feed back to the client
 		for {
+
+			wait := sync.WaitGroup{}
+			c.SetContext(wait)
 			// read pipeline commands
 			cmds, err := c.rd.readCommands(nil)
 			if err != nil {
@@ -245,7 +248,10 @@ func handle(s *Server, c *conn) {
 				} else {
 					c.cmds = c.cmds[1:]
 				}
-				DoCmd(s,c,cmd)
+				_,w := DoCmd(s,c,cmd)
+				if w {
+					wait.Add(1)
+				}
 			}
 			if c.detached {
 				// client has been detached
@@ -254,6 +260,7 @@ func handle(s *Server, c *conn) {
 			if c.closed {
 				return nil
 			}
+			wait.Wait()
 			if err := c.wr.Flush(); err != nil {
 				return err
 			}
