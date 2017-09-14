@@ -1,7 +1,7 @@
 package main
 
 import (
-	"server"
+	"github.com/widaT/d-redis/server"
 )
 
 func main() {
