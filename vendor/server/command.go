@@ -4,7 +4,6 @@ import (
 	"strings"
 	"strconv"
 	"fmt"
-	"time"
 )
 
 type fn func(s *Server,conn Conn, cmd Command) error
@@ -66,7 +65,7 @@ func del(s *Server,conn Conn, cmd Command) error {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 		return nil
 	}
-	k := fmt.Sprintf("%d%d",ID,time.Now().UnixNano())
+	k := fmt.Sprintf("%s",conn.RemoteAddr())
 	Conns.Add(k,conn)
 	//defer  Conns.Del(k)
 	_Storage.Propose(&kv{Method:"del",Args:cmd.Args[1:],Conn:k})

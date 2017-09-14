@@ -368,6 +368,7 @@ func (m *Memdb) Del(uk string,keys ...[]byte) {
 		}
 	}
 	if conn := Conns.Get(uk) ;conn != nil{
+		fmt.Println(conn)
 		conn.WriteInt(count)
 		Conns.Del(uk)
 	}

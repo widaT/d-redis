@@ -37,7 +37,6 @@ func (s *Storage) Propose(kv *kv) {
 	if err != nil {
 		log.Fatalf("msgpack Marshal err (%v)", err)
 	}
-	println(string(b))
 	s.proposeC <- string(b)
 }
 
