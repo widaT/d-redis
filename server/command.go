@@ -4,18 +4,14 @@ import (
 	"strings"
 	"strconv"
 	"fmt"
-	"sync"
 )
 
 type T struct {
 	fn fn
 	w bool
 }
-
 type fn func(s *Server,conn Conn, cmd Command) error
-
 var commandMap = make(map[string]T)
-
 func registerCmd(cmd string,f fn,needwait bool)  {
 	commandMap[cmd] = T{f,needwait}
 }
@@ -44,7 +40,7 @@ func sselect(s *Server,conn Conn, cmd Command) error  {
 func set(s *Server,conn Conn, cmd Command) error {
 	if len(cmd.Args) != 3 {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
-		return nil
+		return checkError
 	}
 	//s.db.Set(string(cmd.Args[1]),cmd.Args[2])
 	_Storage.Propose(&kv{Method:"set",Args:cmd.Args[1:]})
@@ -55,13 +51,9 @@ func set(s *Server,conn Conn, cmd Command) error {
 func mset(s *Server,conn Conn, cmd Command) error {
 	if len(cmd.Args) < 3 {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
-		return nil
+		return checkError
 	}
-	err := s.db.Mset(cmd.Args[1:]...)
-	if err != nil {
-		conn.WriteError(err.Error())
-		return nil
-	}
+	_Storage.Propose(&kv{Method:"mset",Args:cmd.Args[1:]})
 	conn.WriteString("OK")
 	return nil
 }
@@ -69,14 +61,12 @@ func mset(s *Server,conn Conn, cmd Command) error {
 func del(s *Server,conn Conn, cmd Command) error {
 	if len(cmd.Args) < 2 {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
-		conn.Context().(*sync.WaitGroup).Done()
-		return nil
+		return checkError
 	}
 	k := fmt.Sprintf("%s",conn.RemoteAddr())
 	Conns.Add(k,conn)
 	//defer  Conns.Del(k)
 	_Storage.Propose(&kv{Method:"del",Args:cmd.Args[1:],Conn:k})
-
 	return nil
 }
 
@@ -84,14 +74,11 @@ func del(s *Server,conn Conn, cmd Command) error {
 func incr(s *Server,conn Conn, cmd Command) error {
 	if len(cmd.Args) != 2 {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
-		return nil
+		return checkError
 	}
-	num,err := s.db.Incr(string(cmd.Args[1]))
-	if err != nil {
-		conn.WriteError(err.Error())
-		return nil
-	}
-	conn.WriteInt(num)
+	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	Conns.Add(k,conn)
+	_Storage.Propose(&kv{Method:"incr",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
 
@@ -99,7 +86,7 @@ func incr(s *Server,conn Conn, cmd Command) error {
 func get(s *Server,conn Conn, cmd Command) error {
 	if len(cmd.Args) != 2 {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
-		return nil
+		return checkError
 	}
 	v,err := s.db.Get(string(cmd.Args[1]))
 	if err != nil {
@@ -111,7 +98,6 @@ func get(s *Server,conn Conn, cmd Command) error {
 	}else {
 		conn.WriteBulk(v)
 	}
-
 	return nil
 }
 
@@ -119,70 +105,57 @@ func get(s *Server,conn Conn, cmd Command) error {
 func lpush(s *Server,conn Conn, cmd Command)  error {
 	if len(cmd.Args) < 3 {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
-		return nil
+		return checkError
 	}
-	v,err := s.db.Lpush(cmd.Args[1:]...)
-	if err != nil {
-		conn.WriteError(err.Error())
-		return nil
-	}
-	conn.WriteInt(v)
+	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	Conns.Add(k,conn)
+	_Storage.Propose(&kv{Method:"lpush",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
 
 func rpush(s *Server,conn Conn, cmd Command)  error {
 	if len(cmd.Args) < 3 {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
-		return nil
+		return checkError
 	}
-	v,err := s.db.Rpush(cmd.Args[1:]...)
-	if err != nil {
-		conn.WriteError(err.Error())
-		return nil
-	}
-	conn.WriteInt(v)
+	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	Conns.Add(k,conn)
+	_Storage.Propose(&kv{Method:"rpush",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
 
 func lpop(s *Server,conn Conn, cmd Command)  error {
 	if len(cmd.Args) != 2 {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
-		return nil
+		return checkError
 	}
-	v,_ := s.db.Lpop(string(cmd.Args[1]))
-	if v == nil {
-		conn.WriteNull()
-	}else {
-		conn.WriteBulk(v)
-	}
-
+	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	Conns.Add(k,conn)
+	_Storage.Propose(&kv{Method:"lpop",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
 
 func rpop(s *Server,conn Conn, cmd Command)  error {
 	if len(cmd.Args) != 2 {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
-		return nil
+		return checkError
 	}
-	v,_ := s.db.Rpop(string(cmd.Args[1]))
-	if v == nil {
-		conn.WriteNull()
-	}else {
-		conn.WriteBulk(v)
-	}
+	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	Conns.Add(k,conn)
+	_Storage.Propose(&kv{Method:"rpop",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
 
 func lrange(s *Server,conn Conn, cmd Command)  error {
 	if len(cmd.Args) != 4 {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
-		return nil
+		return checkError
 	}
 	start,err1 := strconv.Atoi(string(cmd.Args[2]))
 	end,err2 := strconv.Atoi(string(cmd.Args[3]))
 	if err1 != nil || err2!= nil{
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
-		return nil
+		return checkError
 	}
 	v,_ := s.db.Lrange(string(cmd.Args[1]),start,end)
 	if v == nil {
@@ -202,26 +175,27 @@ func sadd(s *Server,conn Conn, cmd Command)  error {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 		return nil
 	}
-	num,err := s.db.Sadd(string(cmd.Args[1]),cmd.Args[2:]...)
-	if err != nil {
-		conn.WriteError(err.Error())
-	}else {
-		conn.WriteInt(num)
-	}
+	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	Conns.Add(k,conn)
+	_Storage.Propose(&kv{Method:"sadd",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
 
 func spop(s *Server,conn Conn, cmd Command)  error {
 	if len(cmd.Args) != 2 {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
-		return nil
+		return checkError
 	}
-	v,_ := s.db.Spop(string(cmd.Args[1]))
-	if v == nil {
+
+	ret ,_ := s.db.Spop(string(cmd.Args[1]))
+	if ret == nil {
 		conn.WriteNull()
-	}else {
-		conn.WriteBulk(v)
+		return checkError
 	}
+	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	Conns.Add(k,conn)
+	cmd.Args = append(cmd.Args[:2],ret)
+	_Storage.Propose(&kv{Method:"spop",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
 
@@ -246,20 +220,16 @@ func smembers(s *Server,conn Conn, cmd Command)  error {
 func hset(s *Server,conn Conn, cmd Command)  error {
 	if len(cmd.Args) != 4 {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
-		return nil
+		return checkError
 	}
-	num,err := s.db.Hset(string(cmd.Args[1]),string(cmd.Args[2]),cmd.Args[3])
-	if err != nil {
-		conn.WriteError(err.Error())
-	}else {
-		conn.WriteInt(num)
-	}
+	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	_Storage.Propose(&kv{Method:"hset",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
 func hget(s *Server,conn Conn, cmd Command)  error {
 	if len(cmd.Args) != 3 {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
-		return nil
+		return checkError
 	}
 	v,err := s.db.Hget(string(cmd.Args[1]),string(cmd.Args[2]))
 	if err != nil {
@@ -291,31 +261,28 @@ func hgetall(s *Server,conn Conn, cmd Command)  error {
 func zadd(s *Server,conn Conn, cmd Command)  error {
 	if len(cmd.Args) != 4 {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
-		return nil
+		return checkError
 	}
-	score ,err:= strconv.Atoi(string(cmd.Args[2]))
+	_ ,err:= strconv.Atoi(string(cmd.Args[2]))
 	if err !=nil {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
-		return nil
+		return checkError
 	}
-	num,err := s.db.Zadd(string(cmd.Args[1]),score,string(cmd.Args[3]))
-	if err != nil {
-		conn.WriteError(err.Error())
-	}else {
-		conn.WriteInt(num)
-	}
+	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	Conns.Add(k,conn)
+	_Storage.Propose(&kv{Method:"zadd",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
 func zrange(s *Server,conn Conn, cmd Command)  error {
 	if len(cmd.Args) < 4 {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
-		return nil
+		return checkError
 	}
 	start,err1 := strconv.Atoi(string(cmd.Args[2]))
 	end,err2 := strconv.Atoi(string(cmd.Args[3]))
 	if err1 != nil || err2!= nil {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
-		return nil
+		return checkError
 	}
 	v,err := s.db.Zrange(string(cmd.Args[1]),start,end,cmd.Args[4:]...)
 	if err != nil {

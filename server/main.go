@@ -7,6 +7,7 @@ import (
 	"log"
 	"github.com/coreos/etcd/raft/raftpb"
 	"github.com/coreos/etcd/snap"
+	"github.com/iris-contrib/errors"
 )
 var (
 	Conns = NewConnMap()
@@ -15,6 +16,8 @@ var (
 	commitC = make(chan *string)
 	errorC = make(chan error)
 	snapshotterReady = make(chan *snap.Snapshotter, 1)
+
+	checkError = errors.New("not need perpose")
 )
 func Main()  {
 	cluster := flag.String("cluster", "http://127.0.0.1:12379", "comma separated cluster peers")

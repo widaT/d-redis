@@ -66,64 +66,29 @@ func (s *Storage) readCommits(commitC <-chan *string, errorC <-chan error) {
 			log.Fatalf("msgpack.Unmarshal err (%v)", err)
 		}
 		//log.Printf("do commit %s %s %s",dataKv.Method,dataKv.Args,dataKv.Conn)
-
 		switch dataKv.Method {
 		case "set" :
 			s.Redis.Set(string(dataKv.Args[0]),dataKv.Args[1])
+		case "mset":
+			s.Redis.Mset(dataKv.Args...)
 		case "del" :
-			 s.Redis.Del(dataKv.Conn,dataKv.Args...)
-			/*case "hset":
-				num := s.Redis.methodHset(dataKv.Args)
-				if Conns.Exists(dataKv.Conn){
-					respchan := Conns.Get(dataKv.Conn)
-					respchan <- num
-				}
-
-			case "rpush":
-				num := s.Redis.methodRpush(dataKv.Args)
-				if Conns.Exists(dataKv.Conn){
-					respchan := Conns.Get(dataKv.Conn)
-					respchan <- num
-				}
-			case "lpush":
-				num := s.Redis.methodLpush(dataKv.Args)
-				if Conns.Exists(dataKv.Conn){
-					respchan := Conns.Get(dataKv.Conn)
-					respchan <- num
-				}
-			case "lpop":
-				byteArr := s.Redis.methodLpop(dataKv.Args)
-				if Conns.Exists(dataKv.Conn){
-					respchan := Conns.Get(dataKv.Conn)
-					respchan <- byteArr
-				}
-			case "rpop":
-				byteArr := s.Redis.methodRpop(dataKv.Args)
-				if Conns.Exists(dataKv.Conn){
-					respchan := Conns.Get(dataKv.Conn)
-					respchan <- byteArr
-				}
-			case "sadd":
-				num := s.Redis.methodSadd(dataKv.Args)
-				if Conns.Exists(dataKv.Conn){
-					respchan := Conns.Get(dataKv.Conn)
-					respchan <- num
-				}
-
-			case "mset":
-				s.Redis.methodMset(dataKv.Args)
-			case "spop":
-				s.Redis.methodSpop(dataKv.Args)
-			case "incr":
-				num,err := s.Redis.methodIncr(dataKv.Args)
-				if Conns.Exists(dataKv.Conn){
-					respchan := Conns.Get(dataKv.Conn)
-					if err != nil {
-						respchan <- err
-					}else {
-						respchan <- num
-					}
-				}*/
+			s.Redis.Del(dataKv.Conn,dataKv.Args...)
+		case "hset":
+			s.Redis.Hset(dataKv.Conn,string(dataKv.Args[0]),string(dataKv.Args[1]),dataKv.Args[2])
+		case "rpush":
+			s.Redis.Rpush(dataKv.Conn,dataKv.Args...)
+		case "lpush":
+			s.Redis.Lpush(dataKv.Conn,dataKv.Args...)
+		case "lpop":
+			s.Redis.Lpop(dataKv.Conn,string(dataKv.Args[0]))
+		case "rpop":
+			s.Redis.Rpop(dataKv.Conn,string(dataKv.Args[0]))
+		case "sadd":
+			s.Redis.Sadd(dataKv.Conn,string(dataKv.Args[0]),dataKv.Args[1:]...)
+		case "spop":
+			s.Redis.Sspop(dataKv.Conn,string(dataKv.Args[0]),dataKv.Args[1])
+		case "incr":
+			s.Redis.Incr(dataKv.Conn,string(dataKv.Args[0]))
 		default:
 			//do nothing*//*
 		}

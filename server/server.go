@@ -248,8 +248,8 @@ func handle(s *Server, c *conn) {
 				} else {
 					c.cmds = c.cmds[1:]
 				}
-				_,w := DoCmd(s,c,cmd)
-				if w {
+				err,w := DoCmd(s,c,cmd)
+				if w && err == nil{
 					wait.Add(1)
 				}
 			}

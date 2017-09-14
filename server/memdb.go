@@ -98,7 +98,7 @@ func (m *Memdb)  recoverFromSnapshot(snapshot []byte) error {
 }
 
 //list operation
-func (m *Memdb) Rpush(values ...[]byte) (int, error) {
+func (m *Memdb) Rpush(uk string ,values ...[]byte)  {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
 	key := string(values[0])
@@ -106,7 +106,13 @@ func (m *Memdb) Rpush(values ...[]byte) (int, error) {
 		m.dlList[key] =structure.NewList()
 	}
 	n := m.dlList[key].Rpush(values[1:]...)
-	return n, nil
+	if conn := Conns.Get(uk) ;conn != nil{
+		conn.WriteInt(n)
+		if  wait :=conn.Context() ;wait!= nil {
+			wait.(* sync.WaitGroup).Done()
+		}
+		Conns.Del(uk)
+	}
 }
 
 func (m *Memdb) Lrange(key string, start, stop int) (*[][]byte, error) {
@@ -155,7 +161,7 @@ func (m *Memdb) Lindex(key string, index int) ([]byte, error) {
 	return ret, nil
 }
 
-func (m *Memdb) Lpush(values ...[]byte) (int, error) {
+func (m *Memdb) Lpush(uk string, values ...[]byte) {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
 	key := string(values[0])
@@ -163,41 +169,82 @@ func (m *Memdb) Lpush(values ...[]byte) (int, error) {
 		m.dlList[key] = structure.NewList()
 	}
 	num := m.dlList[key].Lpush(values[1:]...)
-	return num, nil
+	if conn := Conns.Get(uk) ;conn != nil{
+		conn.WriteInt(num)
+		if  wait :=conn.Context() ;wait!= nil {
+			wait.(* sync.WaitGroup).Done()
+		}
+		Conns.Del(uk)
+	}
 }
 
 
-func (m *Memdb)Lpop(key string) ([]byte,error) {
+func (m *Memdb)Lpop(uk string,key string) {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
+	conn := Conns.Get(uk)
 	if _,found := m.dlList[key];!found{
-		return nil,nil
+		if conn != nil{
+			conn.WriteNull()
+			if  wait :=conn.Context() ;wait!= nil {
+				wait.(* sync.WaitGroup).Done()
+			}
+			Conns.Del(uk)
+		}
+		return
 	}
-	return m.dlList[key].Lpop(),nil
+	ret := m.dlList[key].Lpop()
+	if conn != nil{
+		conn.WriteBulk(ret)
+		if  wait :=conn.Context() ;wait!= nil {
+			wait.(* sync.WaitGroup).Done()
+		}
+		Conns.Del(uk)
+	}
 }
 
-func (m *Memdb)Rpop(key string) ([]byte,error) {
+func (m *Memdb)Rpop(uk,key string) {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
+	conn := Conns.Get(uk)
 	if _,found := m.dlList[key];!found{
-		return nil,nil
+		if conn != nil{
+			conn.WriteNull()
+			if  wait :=conn.Context() ;wait!= nil {
+				wait.(* sync.WaitGroup).Done()
+			}
+			Conns.Del(uk)
+		}
+		return
 	}
-	return m.dlList[key].Rpop(),nil
+	ret := m.dlList[key].Rpop()
+	if conn != nil{
+		conn.WriteBulk(ret)
+		if  wait :=conn.Context() ;wait!= nil {
+			wait.(* sync.WaitGroup).Done()
+		}
+		Conns.Del(uk)
+	}
 }
 
 //set operation
-func (m *Memdb) Sadd (key string, values ...[]byte) (int ,error){
+func (m *Memdb) Sadd (uk,key string, values ...[]byte){
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
 	if _, exists := m.HSet[key]; !exists {
 		m.HSet[key] = structure.NewSset(key)
 	}
-
 	count := 0
 	for _,value :=range values {
 		count =count + m.HSet[key].Add(string(value))
 	}
-	return count,nil
+	if conn := Conns.Get(uk); conn != nil{
+		conn.WriteInt(count)
+		if  wait :=conn.Context() ;wait!= nil {
+			wait.(* sync.WaitGroup).Done()
+		}
+		Conns.Del(uk)
+	}
 }
 
 
@@ -214,26 +261,31 @@ func (m *Memdb) Scard (key string)( int,error) {
 func (m *Memdb)Spop(key string)( []byte,error)  {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
-
 	if _, exists := m.HSet[key]; !exists {
 		return nil,nil
 	}
-
 	if m.HSet[key].Len() == 0 {
 		return nil,nil
 	}
 	v := m.HSet[key].RandomKey()
-	m.HSet[key].Del(v)
 	return []byte(v),nil
 }
 
-func (m * Memdb)spop(key string,k []byte)  {
+func (m * Memdb)Sspop(uk,key string,k []byte)  {
+	m.rwmu.Lock()
+	defer m.rwmu.Unlock()
 	if _, exists := m.HSet[key]; !exists {
 		return
 	}
 	m.HSet[key].Del(string(k))
+	if conn := Conns.Get(uk); conn != nil{
+		conn.WriteBulk(k)
+		if  wait :=conn.Context() ;wait!= nil {
+			wait.(* sync.WaitGroup).Done()
+		}
+		Conns.Del(uk)
+	}
 }
-
 
 func (m *Memdb) Smembers (key string)  ([][]byte,error) {
 	m.rwmu.RLock()
@@ -259,7 +311,7 @@ func (m *Memdb) Hget(key, subkey string) ([]byte, error) {
 	return nil, nil
 }
 
-func (m *Memdb) Hset(key, subkey string, value []byte) (int, error) {
+func (m *Memdb) Hset(uk ,key, subkey string, value []byte) {
 	ret := 0
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
@@ -271,7 +323,13 @@ func (m *Memdb) Hset(key, subkey string, value []byte) (int, error) {
 		ret = 1
 	}
 	m.Hvalues[key][subkey] = value
-	return ret, nil
+	if conn := Conns.Get(uk) ;conn != nil{
+		conn.WriteInt(ret)
+		if  wait :=conn.Context() ;wait!= nil {
+			wait.(* sync.WaitGroup).Done()
+		}
+		Conns.Del(uk)
+	}
 }
 
 func (m *Memdb) Hgetall(key string) (HashValue, error) {
@@ -319,20 +377,34 @@ func (m *Memdb) Mset(values ...[]byte) error {
 }
 
 
-func (m *Memdb) Incr (key string) (int, error) {
+func (m *Memdb) Incr (uk,key string)  {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
 	v,found := m.Values[key]
 	num  := 0
+	conn := Conns.Get(uk)
 	var err error
 	if found {
 		num ,err = strconv.Atoi(string(v))
 		if err != nil {
-			return 0,errors.New("value is not an integer or out of range")
+			if conn != nil{
+				conn.WriteError("value is not an integer or out of range")
+				if  wait :=conn.Context() ;wait!= nil {
+					wait.(* sync.WaitGroup).Done()
+				}
+				Conns.Del(uk)
+			}
+			return
 		}
 	}
 	m.Values[key] = []byte(fmt.Sprintf("%d",num+1))
-	return num ,nil
+	if conn != nil{
+		conn.WriteInt(num+1)
+		if  wait :=conn.Context() ;wait!= nil {
+			wait.(* sync.WaitGroup).Done()
+		}
+		Conns.Del(uk)
+	}
 }
 
 func (m *Memdb) Del(uk string,keys ...[]byte) {
@@ -377,7 +449,7 @@ func (m *Memdb) Del(uk string,keys ...[]byte) {
 }
 
 //sort set
-func (m *Memdb) Zadd (key string,score int,val string) (int ,error){
+func (m *Memdb) Zadd (uk,key string,score int,val string){
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
 	if _, exists := m.HSortSet[key]; !exists {
@@ -393,7 +465,14 @@ func (m *Memdb) Zadd (key string,score int,val string) (int ,error){
 	}
 	m.HSortSet[key][val] = score
 	m.skiplist[key].Set(score,val)
-	return count,nil
+
+	if conn := Conns.Get(uk) ;conn != nil{
+		conn.WriteInt(count)
+		if  wait :=conn.Context() ;wait!= nil {
+			wait.(* sync.WaitGroup).Done()
+		}
+		Conns.Del(uk)
+	}
 }
 
 //@todo 这个实现算法有点问题
