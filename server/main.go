@@ -7,7 +7,9 @@ import (
 	"log"
 	"github.com/coreos/etcd/raft/raftpb"
 	"github.com/coreos/etcd/snap"
-	"github.com/iris-contrib/errors"
+	"errors"
+    _  "net/http/pprof"
+	"net/http"
 )
 var (
 	Conns = NewConnMap()
@@ -26,7 +28,14 @@ func Main()  {
 	s := flag.Uint64("s",1000000,"snapshot count")
 	join := flag.Bool("join", false, "join an existing cluster")
 	dataDir := flag.String("data-dir","data/","store databases")
+	pprof := flag.Bool("p",false,"enable pprof")
 	flag.Parse()
+	if *pprof {
+		go func() {
+			http.ListenAndServe(":6060", nil)
+		}()
+	}
+
 	defer close(proposeC)
 	defer close(confChangeC)
 	_Storage = &Storage{proposeC: proposeC, Redis: NewMemdb()}

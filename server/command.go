@@ -4,6 +4,8 @@ import (
 	"strings"
 	"strconv"
 	"fmt"
+	"sync"
+	"time"
 )
 
 type T struct {
@@ -63,9 +65,9 @@ func del(s *Server,conn Conn, cmd Command) error {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 		return checkError
 	}
-	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	k := fmt.Sprintf("%s%d",conn.RemoteAddr(),time.Now().UnixNano())
 	Conns.Add(k,conn)
-	//defer  Conns.Del(k)
+	conn.Context().(* sync.WaitGroup).Add(1)
 	_Storage.Propose(&kv{Method:"del",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
@@ -76,8 +78,9 @@ func incr(s *Server,conn Conn, cmd Command) error {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 		return checkError
 	}
-	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	k := fmt.Sprintf("%s%d",conn.RemoteAddr(),time.Now().UnixNano())
 	Conns.Add(k,conn)
+	conn.Context().(* sync.WaitGroup).Add(1)
 	_Storage.Propose(&kv{Method:"incr",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
@@ -107,8 +110,9 @@ func lpush(s *Server,conn Conn, cmd Command)  error {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 		return checkError
 	}
-	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	k := fmt.Sprintf("%s%d",conn.RemoteAddr(),time.Now().UnixNano())
 	Conns.Add(k,conn)
+	conn.Context().(* sync.WaitGroup).Add(1)
 	_Storage.Propose(&kv{Method:"lpush",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
@@ -118,8 +122,9 @@ func rpush(s *Server,conn Conn, cmd Command)  error {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 		return checkError
 	}
-	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	k := fmt.Sprintf("%s%d",conn.RemoteAddr(),time.Now().UnixNano())
 	Conns.Add(k,conn)
+	conn.Context().(* sync.WaitGroup).Add(1)
 	_Storage.Propose(&kv{Method:"rpush",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
@@ -129,8 +134,9 @@ func lpop(s *Server,conn Conn, cmd Command)  error {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 		return checkError
 	}
-	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	k := fmt.Sprintf("%s%d",conn.RemoteAddr(),time.Now().UnixNano())
 	Conns.Add(k,conn)
+	conn.Context().(* sync.WaitGroup).Add(1)
 	_Storage.Propose(&kv{Method:"lpop",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
@@ -140,8 +146,9 @@ func rpop(s *Server,conn Conn, cmd Command)  error {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 		return checkError
 	}
-	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	k := fmt.Sprintf("%s%d",conn.RemoteAddr(),time.Now().UnixNano())
 	Conns.Add(k,conn)
+	conn.Context().(* sync.WaitGroup).Add(1)
 	_Storage.Propose(&kv{Method:"rpop",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
@@ -175,8 +182,9 @@ func sadd(s *Server,conn Conn, cmd Command)  error {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 		return nil
 	}
-	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	k := fmt.Sprintf("%s%d",conn.RemoteAddr(),time.Now().UnixNano())
 	Conns.Add(k,conn)
+	conn.Context().(* sync.WaitGroup).Add(1)
 	_Storage.Propose(&kv{Method:"sadd",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
@@ -192,9 +200,10 @@ func spop(s *Server,conn Conn, cmd Command)  error {
 		conn.WriteNull()
 		return checkError
 	}
-	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	k := fmt.Sprintf("%s%d",conn.RemoteAddr(),time.Now().UnixNano())
 	Conns.Add(k,conn)
 	cmd.Args = append(cmd.Args[:2],ret)
+	conn.Context().(* sync.WaitGroup).Add(1)
 	_Storage.Propose(&kv{Method:"spop",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
@@ -222,7 +231,8 @@ func hset(s *Server,conn Conn, cmd Command)  error {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 		return checkError
 	}
-	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	k := fmt.Sprintf("%s%d",conn.RemoteAddr(),time.Now().UnixNano())
+	conn.Context().(* sync.WaitGroup).Add(1)
 	_Storage.Propose(&kv{Method:"hset",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
@@ -268,8 +278,9 @@ func zadd(s *Server,conn Conn, cmd Command)  error {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 		return checkError
 	}
-	k := fmt.Sprintf("%s",conn.RemoteAddr())
+	k := fmt.Sprintf("%s%d",conn.RemoteAddr(),time.Now().UnixNano())
 	Conns.Add(k,conn)
+	conn.Context().(* sync.WaitGroup).Add(1)
 	_Storage.Propose(&kv{Method:"zadd",Args:cmd.Args[1:],Conn:k})
 	return nil
 }
