@@ -4,6 +4,7 @@ import (
 	"log"
 	"github.com/coreos/etcd/snap"
 	"github.com/vmihailenco/msgpack"
+	"strconv"
 )
 
 var _Storage * Storage
@@ -89,6 +90,9 @@ func (s *Storage) readCommits(commitC <-chan *string, errorC <-chan error) {
 			s.Redis.Sspop(dataKv.Conn,string(dataKv.Args[0]),dataKv.Args[1])
 		case "incr":
 			s.Redis.Incr(dataKv.Conn,string(dataKv.Args[0]))
+		case "zadd":
+			score ,_:= strconv.Atoi(string(dataKv.Args[1]))
+			s.Redis.Zadd(dataKv.Conn,string(dataKv.Args[0]),score,string(dataKv.Args[2]))
 		default:
 			//do nothing*//*
 		}

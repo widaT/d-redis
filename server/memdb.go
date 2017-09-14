@@ -195,7 +195,11 @@ func (m *Memdb)Lpop(uk string,key string) {
 	}
 	ret := m.dlList[key].Lpop()
 	if conn != nil{
-		conn.WriteBulk(ret)
+		if ret != nil {
+			conn.WriteBulk(ret)
+		}else {
+			conn.WriteNull()
+		}
 		if  wait :=conn.Context() ;wait!= nil {
 			wait.(* sync.WaitGroup).Done()
 		}
@@ -219,7 +223,11 @@ func (m *Memdb)Rpop(uk,key string) {
 	}
 	ret := m.dlList[key].Rpop()
 	if conn != nil{
-		conn.WriteBulk(ret)
+		if ret != nil {
+			conn.WriteBulk(ret)
+		}else {
+			conn.WriteNull()
+		}
 		if  wait :=conn.Context() ;wait!= nil {
 			wait.(* sync.WaitGroup).Done()
 		}
