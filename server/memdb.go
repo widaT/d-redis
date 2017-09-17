@@ -87,7 +87,7 @@ func (m *Memdb)  recoverFromSnapshot(snapshot []byte) error {
 	db.skiplist = make(HashSkipList)
 	//重新初始化skiplist
 	for key,val := range db.HSortSet {
-		intmap := structure.NewIntMap()
+		intmap := structure.NewFloatMap()
 		for k,v := range val {
 			intmap.Set(v,k)
 		}
@@ -464,7 +464,7 @@ func (m *Memdb) Zadd (uk,key string,score int,val string){
 		m.HSortSet[key] = make(HashInt)
 	}
 	if _, exists := m.skiplist[key]; !exists {
-		m.skiplist[key] = structure.NewIntMap()
+		m.skiplist[key] = structure.NewFloatMap()
 	}
 	count := 0
 	_ ,found :=m.HSortSet[key][val]
