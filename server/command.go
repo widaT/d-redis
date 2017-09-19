@@ -283,8 +283,8 @@ func zrange(s *Server,conn Conn, cmd Command)  error {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 		return checkError
 	}
-	start,err1 := strconv.Atoi(string(cmd.Args[2]))
-	end,err2 := strconv.Atoi(string(cmd.Args[3]))
+	start,err1 := strconv.ParseFloat(string(cmd.Args[2]),64)
+	end,err2 := strconv.ParseFloat(string(cmd.Args[3]),64)
 	if err1 != nil || err2!= nil {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 		return checkError

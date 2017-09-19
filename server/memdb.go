@@ -12,9 +12,9 @@ import (
 
 type (
 	HashValue   map[string][]byte
-	HashInt     map[string]int
+	HashFloat     map[string]float64
 	HashHash    map[string]HashValue
-	HashHashInt map[string]HashInt
+	HashHashFloat map[string]HashFloat
 	HashBrStack map[string]*structure.List
 	HashSkipList map[string]*structure.SkipList
 	HashSet     map[string]*structure.Sset
@@ -27,7 +27,7 @@ type Memdb struct {
 	dlList HashBrStack
 	HSet HashSet
 	HList HashList
-	HSortSet HashHashInt
+	HSortSet HashHashFloat
 	skiplist HashSkipList
 	rwmu sync.RWMutex
 	recovebool bool
@@ -38,7 +38,7 @@ func NewMemdb() *Memdb {
 		Values:   make(HashValue),
 		dlList:  make(HashBrStack),
 		HSet    :  make(HashSet),
-		HSortSet    :  make(HashHashInt),
+		HSortSet    :  make(HashHashFloat),
 		HList    :  make(HashList),
 		Hvalues :make(HashHash),
 		skiplist : make(HashSkipList),
@@ -87,7 +87,7 @@ func (m *Memdb)  recoverFromSnapshot(snapshot []byte) error {
 	db.skiplist = make(HashSkipList)
 	//重新初始化skiplist
 	for key,val := range db.HSortSet {
-		intmap := structure.NewIntMap()
+		intmap := structure.NewSkipList()
 		for k,v := range val {
 			intmap.Set(v,k)
 		}
@@ -457,14 +457,14 @@ func (m *Memdb) Del(uk string,keys ...[]byte) {
 }
 
 //sort set
-func (m *Memdb) Zadd (uk,key string,score int,val string){
+func (m *Memdb) Zadd (uk,key string,score float64,val string){
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
 	if _, exists := m.HSortSet[key]; !exists {
-		m.HSortSet[key] = make(HashInt)
+		m.HSortSet[key] = make(HashFloat)
 	}
 	if _, exists := m.skiplist[key]; !exists {
-		m.skiplist[key] = structure.NewIntMap()
+		m.skiplist[key] = structure.NewSkipList()
 	}
 	count := 0
 	_ ,found :=m.HSortSet[key][val]
@@ -484,7 +484,7 @@ func (m *Memdb) Zadd (uk,key string,score int,val string){
 }
 
 //@todo 这个实现算法有点问题
-func (m *Memdb) Zrange(key string, start, stop int,args ...[]byte) (*[][]byte, error) {
+func (m *Memdb) Zrange(key string, start, stop float64,args ...[]byte) (*[][]byte, error) {
 	withscores := false
 	if len (args) > 0  {
 		if strings.ToLower(string(args[0])) != "withscores"{
@@ -503,9 +503,9 @@ func (m *Memdb) Zrange(key string, start, stop int,args ...[]byte) (*[][]byte, e
 	var ret [][]byte
 	for iter.Next() {
 		if withscores {
-			ret = append(ret, []byte(fmt.Sprintf("%d",iter.Key().(int))))
+			ret = append(ret,  []byte(strconv.FormatFloat(iter.Key(), 'g', -1, 64)))
 		}
-		ret = append(ret,[]byte(iter.Value().(string)))
+		ret = append(ret,[]byte(iter.Value()))
 	}
 	iter.Close()
 	return &ret, nil
