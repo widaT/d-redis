@@ -17,7 +17,7 @@ type (
 	HashHashFloat map[string]HashFloat
 	HashBrStack map[string]*structure.List
 	HashSkipList map[string]*structure.SkipList
-	HashSet     map[string]*structure.Sset
+	HashSet     map[string]*structure.Set
 	HashList    map[string][][]byte
 )
 
