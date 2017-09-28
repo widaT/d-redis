@@ -4,11 +4,24 @@ import (
 	"log"
 	"github.com/coreos/etcd/snap"
 	"github.com/vmihailenco/msgpack"
-	"strconv"
+	"bytes"
+	"encoding/binary"
 )
 
 var _Storage * Storage
+func FloatToBytes(n float64) []byte {
+	tmp := float64(n)
+	bytesBuffer := bytes.NewBuffer([]byte{})
+	binary.Write(bytesBuffer, binary.BigEndian, &tmp)
+	return bytesBuffer.Bytes()
+}
 
+func BytesToFloat(b []byte) float64 {
+	bytesBuffer := bytes.NewBuffer(b)
+	var tmp float64
+	binary.Read(bytesBuffer, binary.BigEndian, &tmp)
+	return tmp
+}
 
 // a key-value store backed by raftd
 type Storage struct {
@@ -91,7 +104,7 @@ func (s *Storage) readCommits(commitC <-chan *string, errorC <-chan error) {
 		case "incr":
 			s.Redis.Incr(dataKv.Conn,string(dataKv.Args[0]))
 		case "zadd":
-			score ,_:= strconv.Atoi(string(dataKv.Args[1]))
+			score := BytesToFloat(dataKv.Args[1])
 			s.Redis.Zadd(dataKv.Conn,string(dataKv.Args[0]),score,string(dataKv.Args[2]))
 		default:
 			//do nothing*//*
