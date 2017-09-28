@@ -41,7 +41,7 @@ func set(s *Server,conn Conn, cmd Command) error {
 		return checkError
 	}
 	//s.db.Set(string(cmd.Args[1]),cmd.Args[2])
-	_Storage.Propose(&kv{Method:"set",Args:cmd.Args[1:]})
+	go _Storage.Propose(&kv{Method:"set",Args:cmd.Args[1:]})
 	conn.WriteString("OK")
 	return nil
 }
@@ -51,7 +51,7 @@ func mset(s *Server,conn Conn, cmd Command) error {
 		conn.WriteError("ERR wrong number of arguments for '" + string(cmd.Args[0]) + "' command")
 		return checkError
 	}
-	_Storage.Propose(&kv{Method:"mset",Args:cmd.Args[1:]})
+	go _Storage.Propose(&kv{Method:"mset",Args:cmd.Args[1:]})
 	conn.WriteString("OK")
 	return nil
 }
