@@ -38,5 +38,3 @@ goreman start
 # 感谢
 
 [etcd-raft](https://github.com/coreos/etcd/tree/master/raft)
-
-[go-redis-server](https://github.com/docker/go-redis-server)
