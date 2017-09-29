@@ -37,36 +37,6 @@ goreman start
 
 This will bring up three d-redis instances.
 
-### Dynamic cluster reconfiguration
-
-Nodes can be added to or removed from a running cluster using redis command-line client.
-
-For example, suppose we have a 3-node cluster that was started with the commands:
-```sh
-raftexample --id 1 --cluster http://127.0.0.1:12379,http://127.0.0.1:22379,http://127.0.0.1:32379 --port 6389
-raftexample --id 2 --cluster http://127.0.0.1:12379,http://127.0.0.1:22379,http://127.0.0.1:32379 --port 6399
-raftexample --id 3 --cluster http://127.0.0.1:12379,http://127.0.0.1:22379,http://127.0.0.1:32379 --port 6169
-```
-
-A fourth node with ID 4 can be added by useing a addnode request :
-```sh
-redis-cli -p 6389 addnode 4 http://127.0.0.1:42379
-```
-
-Then the new node can be started as the others were, using the --join option:
-```sh
-d-redis --id 4 --cluster http://127.0.0.1:12379,http://127.0.0.1:22379,http://127.0.0.1:32379,http://127.0.0.1:42379 --port 6059 --join
-```
-
-The new node should join the cluster and be able to service redis client requests.
-
-We can remove a node using a removenode request:
-```sh
-redis-cli -p 6389 removenode 4 http://127.0.0.1:42379
-```
-
-Node 3 should shut itself down once the cluster has processed this request.
-
 # benchmark
 
 ![benchmark](https://raw.githubusercontent.com/widaT/d-redis/master/doc/benchmark.png)
