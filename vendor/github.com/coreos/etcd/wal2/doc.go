@@ -72,4 +72,4 @@ This will give you the metadata, the last raft.State and the slice of
 raft.Entry items in the log.
 
 */
-package wal
+package wal2

@@ -227,8 +227,7 @@ func handle(s *Server, c *conn) {
 		// read commands and feed back to the client
 		for {
 
-			wait := sync.WaitGroup{}
-			c.SetContext(&wait)
+
 			// read pipeline commands
 			cmds, err := c.rd.readCommands(nil)
 			if err != nil {
@@ -240,6 +239,8 @@ func handle(s *Server, c *conn) {
 				}
 				return err
 			}
+			wait := sync.WaitGroup{}
+			c.SetContext(&wait)
 			c.cmds = cmds
 			for len(c.cmds) > 0 {
 				cmd := c.cmds[0]

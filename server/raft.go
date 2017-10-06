@@ -111,7 +111,7 @@ func (rc *raftNode) saveSnap(snap raftpb.Snapshot) error {
 	if err := rc.wal.SaveSnapshot(walSnap); err != nil {
 		return err
 	}
-	return rc.wal.ReleaseLockTo(snap.Metadata.Index)
+	return nil
 }
 
 func (rc *raftNode) entriesToApply(ents []raftpb.Entry) (nents []raftpb.Entry) {
@@ -221,7 +221,7 @@ func (rc *raftNode) replayWAL() *wal.WAL {
 	log.Printf("replaying WAL of member %d", rc.id)
 	snapshot := rc.loadSnapshot()
 	w := rc.openWAL(snapshot)
-	_, st, ents, err := w.ReadAll()
+	_, st, ents, err := w.ReadAll(snapshot)
 	if err != nil {
 		log.Fatalf("raft-redis: failed to read WAL (%v)", err)
 	}
@@ -423,19 +423,19 @@ func (rc *raftNode) serveChannels() {
 
 		// store raftd entries to wal, then publish over commit channel
 		case rd := <-rc.node.Ready():
-		/*	rc.wal.Save(rd.HardState, rd.Entries)
+			rc.wal.Save(rd.HardState, rd.Entries)
 			if !raft.IsEmptySnap(rd.Snapshot) {
 				rc.saveSnap(rd.Snapshot)
 				rc.raftStorage.ApplySnapshot(rd.Snapshot)
 				rc.publishSnapshot(rd.Snapshot)
-			}*/
+			}
 			rc.raftStorage.Append(rd.Entries)
 			rc.transport.Send(rd.Messages)
 			if ok := rc.publishEntries(rc.entriesToApply(rd.CommittedEntries)); !ok {
 				rc.stop()
 				return
 			}
-			//rc.maybeTriggerSnapshot()
+			rc.maybeTriggerSnapshot()
 			rc.node.Advance()
 
 		case err := <-rc.transport.ErrorC:
